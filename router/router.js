@@ -1,18 +1,28 @@
 const router = require("express").Router();
 
-// only runs with url begins with /api/posts
+const Posts = require("../data/db");
+
 router.get("/", (req, res) => {
   res.status(200).json(posts);
 });
 
-// Create a post
 router.post("/", (req, res) => {
-  const post = req.body;
-  if (post.title) {
-    posts.push(post);
-    res.status(201).json(posts);
+  const { title, contents } = req.body;
+
+  if (!title || !contents) {
+    res.status(400).json({
+      errorMessage: "Please provide title and contents for the post."
+    });
   } else {
-    res.status(400).json({ message: "This post was not found" });
+    Posts.insert(req.body)
+      .then(post => {
+        res.status(201).json(post);
+      })
+      .catch(() => {
+        res.status(500).json({
+          message: "There was an error while creating the post."
+        });
+      });
   }
 });
 
