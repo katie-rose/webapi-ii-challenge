@@ -16,6 +16,23 @@ router.get("/", (req, res) => {
 });
 
 // GET /api/posts/:id
+router.get("/:id", (req, res) => {
+  Posts.findById(req.params.id)
+    .then(user => {
+      if (user) {
+        res.status(200).json(user);
+      } else {
+        res.status(404).json({
+          message: "The post with the specified ID does not exist."
+        });
+      }
+    })
+    .catch(() => {
+      res
+        .status(500)
+        .json({ error: "The post information could not be retrieved." });
+    });
+});
 
 // GET /api/posts/:id/comments
 
@@ -40,24 +57,39 @@ router.post("/", (req, res) => {
   }
 });
 
-// POST comments
+// POST /:id/comments
 router.post("/:id/comments", (req, res) => {
-  const { id } = req.params;
-  Posts.findById(id)
-    .then(post => {
-      if (post.length) {
-        res.status(200).json(post);
-      } else {
-        res.status(404).json({
-          message: "The post with the specified ID does not exist."
+  const commentInfo = req.body;
+  const postId = req.params;
+  if (commentInfo.text && commentInfo.post_id === postId.id) {
+    Posts.findById(postId)
+      .then(post => {
+        if (post) {
+          Posts.insertComment(commentInfo)
+            .then(id => {
+              res.status(201).json(id);
+            })
+            .catch(err => {
+              res.status(500).json({
+                error: "There was an error saving the comment to the database."
+              });
+            });
+        } else {
+          res.status(404).json({
+            message: "The post with the specified ID does not exist."
+          });
+        }
+      })
+      .catch(err => {
+        res.status(500).json({
+          error: "There was an error saving the comment to the database."
         });
-      }
-    })
-    .catch(() => {
-      res
-        .status(500)
-        .json({ error: "The post information could not be retrieved." });
-    });
+      });
+  } else {
+    res
+      .status(400)
+      .json({ errorMessage: "Please provide text for the comment." });
+  }
 });
 
 // PUT /api/posts/:id
